@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { errorHandler } from "./middlewares/errorMiddleware";
 import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/authRoutes";
@@ -35,4 +36,5 @@ app.use("/api/events", eventRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
+app.use(errorHandler);
 export default app;
