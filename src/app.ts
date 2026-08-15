@@ -1,4 +1,5 @@
 import express from "express";
+import passport from "passport";
 import cors from "cors";
 import { errorHandler } from "./middlewares/errorMiddleware";
 import cookieParser from "cookie-parser";
@@ -22,6 +23,8 @@ app.use(
 
 app.use(express.json()); // parses incoming JSON bodies into req.body
 app.use(cookieParser()); // parses cookies into req.cookies
+
+app.use(passport.initialize());
 
 // --- Health check route ---
 app.get("/health", (_req, res) => {
