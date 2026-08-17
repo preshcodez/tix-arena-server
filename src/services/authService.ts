@@ -111,9 +111,26 @@ export const registerUser = async (input: RegisterInput) => {
 // ==========================================
 
 export const verifyEmail = async (email: string, otp: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  console.log("VERIFY EMAIL:");
+  console.log("Email:", normalizedEmail);
+  console.log("OTP:", otp);
+
   const user = await User.findOne({
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
   }).select("+otp +otpExpires");
+
+  console.log("USER FOUND:", !!user);
+
+  if (user) {
+    console.log("BEFORE VERIFICATION:", {
+      email: user.email,
+      isVerified: user.isVerified,
+      otpExists: !!user.otp,
+      otpExpires: user.otpExpires,
+    });
+  }
 
   if (!user || !user.verifyOTP(otp)) {
     throw new ApiError(400, "Invalid or expired verification code.");
@@ -124,6 +141,11 @@ export const verifyEmail = async (email: string, otp: string) => {
   user.otpExpires = undefined;
 
   await user.save();
+
+  console.log("AFTER VERIFICATION:", {
+    email: user.email,
+    isVerified: user.isVerified,
+  });
 
   const token = generateToken(user);
 
