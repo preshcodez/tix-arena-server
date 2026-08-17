@@ -12,12 +12,12 @@ passport.use(
     async (_accessToken, _refreshToken, profile: Profile, done) => {
       try {
         const email = profile.emails?.[0]?.value?.toLowerCase();
+
         if (!email) {
           return done(new Error("Google account has no email"));
         }
 
         let user = await User.findOne({ email });
-        console.log("Google Passport strategy initialized");
 
         if (user) {
           if (!user.googleId) {
@@ -32,6 +32,7 @@ passport.use(
             googleId: profile.id,
             isVerified: true,
           });
+
           await user.save();
         }
 
@@ -42,5 +43,7 @@ passport.use(
     },
   ),
 );
+
+console.log("Google Passport strategy initialized");
 
 export default passport;
