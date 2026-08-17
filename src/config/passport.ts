@@ -17,6 +17,7 @@ passport.use(
         }
 
         let user = await User.findOne({ email });
+        console.log("Google Passport strategy initialized");
 
         if (user) {
           if (!user.googleId) {
