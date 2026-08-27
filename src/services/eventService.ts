@@ -30,7 +30,10 @@ export const createEvent = async (vendorId: string, eventData: any) => {
 // ==============================
 
 export const getAllEvents = async () => {
-  return Event.find()
+  return Event.find({
+    status: "approved",
+    isActive: true,
+  })
     .populate("vendor", "businessName email")
     .sort({ createdAt: -1 });
 };
