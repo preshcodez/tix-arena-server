@@ -18,26 +18,17 @@ export const bookTicket = async (
       return;
     }
 
-    const { eventId, fullName, email, phoneNumber, ticketType, quantity } =
-      req.body || {};
+    const { eventId, phoneNumber, ticketType, quantity } = req.body || {};
 
-    if (
-      !eventId ||
-      !fullName ||
-      !email ||
-      !phoneNumber ||
-      !ticketType ||
-      quantity === undefined
-    ) {
+    if (!eventId || !ticketType || quantity === undefined) {
       res.status(400).json({
         success: false,
-        message:
-          "Event ID, full name, email, phone number, ticket type and quantity are required",
+        message: "Event ID, ticket type and quantity are required",
       });
       return;
     }
 
-    if (quantity < 1) {
+    if (!Number.isInteger(quantity) || quantity < 1) {
       res.status(400).json({
         success: false,
         message: "Quantity must be at least 1",
@@ -48,8 +39,6 @@ export const bookTicket = async (
     const ticket = await ticketService.bookTicket(
       req.auth.sub,
       eventId,
-      fullName,
-      email,
       phoneNumber,
       ticketType,
       quantity,
@@ -150,7 +139,7 @@ export const checkInTicket = async (
 // INITIALIZE PAYSTACK PAYMENT
 // ==============================
 
-export const payForTicket = async (
+export const initializePayment = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -163,15 +152,25 @@ export const payForTicket = async (
       return;
     }
 
-    const result = await ticketService.initializePayment(
+    const ticketId = req.params.ticketId as string;
+
+    if (!ticketId) {
+      res.status(400).json({
+        success: false,
+        message: "Ticket ID is required",
+      });
+      return;
+    }
+
+    const payment = await ticketService.initializePayment(
       req.auth.sub,
-      req.params.ticketId as string,
+      ticketId,
     );
 
     res.status(200).json({
       success: true,
-      message: "Paystack payment initialized successfully",
-      data: result,
+      message: "Payment initialized successfully",
+      data: payment,
     });
   } catch (error) {
     console.error("Initialize Payment Error:", error);
@@ -203,28 +202,28 @@ export const verifyPayment = async (
       return;
     }
 
-    const { reference } = req.body;
+    const ticketId = req.params.ticketId as string;
 
-    const { ticketId } = req.params;
+    const { reference } = req.body || {};
 
-    if (!reference) {
+    if (!ticketId || !reference) {
       res.status(400).json({
         success: false,
-        message: "Payment reference is required",
+        message: "Ticket ID and payment reference are required",
       });
       return;
     }
 
     const ticket = await ticketService.verifyPayment(
       req.auth.sub,
-      ticketId as string,
+      ticketId,
       reference,
     );
 
     res.status(200).json({
       success: true,
       message: "Payment verified successfully",
-      ticket,
+      data: ticket,
     });
   } catch (error) {
     console.error("Verify Payment Error:", error);

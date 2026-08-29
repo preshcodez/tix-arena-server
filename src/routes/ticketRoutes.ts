@@ -6,7 +6,7 @@ import {
   bookTicket,
   getMyTickets,
   checkInTicket,
-  payForTicket,
+  initializePayment,
   verifyPayment,
 } from "../controllers/ticketController";
 
@@ -25,10 +25,14 @@ router.get("/my-tickets", authMiddleware, getMyTickets);
 // Check in ticket
 router.post("/check-in", authMiddleware, checkInTicket);
 
+// ==============================
+// PAYSTACK
+// ==============================
+
 // Initialize Paystack payment
-router.patch("/:ticketId/pay", authMiddleware, payForTicket);
+router.post("/:ticketId/pay", authMiddleware, initializePayment);
 
 // Verify Paystack payment
-router.post("/:ticketId/verify-payment", authMiddleware, verifyPayment);
+router.post("/:ticketId/verify", authMiddleware, verifyPayment);
 
 export default router;
