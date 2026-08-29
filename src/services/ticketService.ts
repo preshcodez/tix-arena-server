@@ -67,7 +67,7 @@ export const bookTicket = async (
     throw new Error("Not enough tickets available");
   }
 
-  // Calculate total
+  // Calculate total amount
   const totalAmount = selectedTicket.price * quantity;
 
   // Generate unique ticket code
@@ -95,11 +95,11 @@ export const bookTicket = async (
     user: userObjectId,
     event: eventObjectId,
 
-    // Get these from the authenticated user
+    // Get name and email from logged-in user
     fullName: `${user.firstName} ${user.lastName}`.trim(),
     email: user.email,
 
-    // Optional
+    // Phone is optional
     phoneNumber: phoneNumber || undefined,
 
     ticketType,
@@ -219,6 +219,7 @@ export const initializePayment = async (userId: string, ticketId: string) => {
 
   // Paystack expects amount in kobo
   // ₦5,000 = 500,000 kobo
+
   const amountInKobo = Math.round(ticket.totalAmount * 100);
 
   // Unique Paystack reference
@@ -228,11 +229,8 @@ export const initializePayment = async (userId: string, ticketId: string) => {
     "https://api.paystack.co/transaction/initialize",
     {
       email: ticket.email,
-
       amount: amountInKobo,
-
       currency: "NGN",
-
       reference,
 
       callback_url: `${CLIENT_URL}/payment/callback`,
@@ -314,9 +312,7 @@ export const verifyPayment = async (
 
   // Ask Paystack to verify transaction
   const response = await axios.get(
-    `https://api.paystack.co/transaction/verify/${encodeURIComponent(
-      reference,
-    )}`,
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
     {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -354,7 +350,6 @@ export const verifyPayment = async (
 
   // Mark ticket as paid
   ticket.paymentStatus = "paid";
-
   ticket.paystackReference = reference;
 
   await ticket.save();
@@ -372,7 +367,6 @@ export const verifyPayment = async (
     try {
       await emailPurchaseTicket({
         email: user.email,
-
         fullName,
 
         eventTitle: event?.title || "Your Event",
