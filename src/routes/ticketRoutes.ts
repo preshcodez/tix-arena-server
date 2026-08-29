@@ -7,11 +7,14 @@ import {
   getMyTickets,
   checkInTicket,
   payForTicket,
+  verifyPayment,
 } from "../controllers/ticketController";
 
 const router = Router();
 
-// ================= USER ROUTES =================
+// ==============================
+// USER ROUTES
+// ==============================
 
 // Book ticket
 router.post("/book", authMiddleware, bookTicket);
@@ -22,11 +25,10 @@ router.get("/my-tickets", authMiddleware, getMyTickets);
 // Check in ticket
 router.post("/check-in", authMiddleware, checkInTicket);
 
-
-
-// Pay for ticket - FREE TEST PAYMENT
+// Initialize Paystack payment
 router.patch("/:ticketId/pay", authMiddleware, payForTicket);
 
-
+// Verify Paystack payment
+router.post("/:ticketId/verify-payment", authMiddleware, verifyPayment);
 
 export default router;

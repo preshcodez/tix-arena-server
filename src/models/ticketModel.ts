@@ -3,18 +3,26 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 export interface ITicket extends Document {
   user: mongoose.Types.ObjectId;
   event: mongoose.Types.ObjectId;
+
   fullName: string;
   email: string;
   phoneNumber: string;
+
   ticketType: string;
   quantity: number;
   totalAmount: number;
+
   paymentStatus: "pending" | "paid" | "failed";
+  paystackReference?: string;
+
   ticketStatus: "active" | "used" | "cancelled";
+
   ticketCode: string;
   qrCode: string;
+
   checkedIn: boolean;
   checkedInAt?: Date;
+
   purchasedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +83,12 @@ const ticketSchema = new Schema<ITicket>(
       type: String,
       enum: ["pending", "paid", "failed"],
       default: "pending",
+    },
+
+    paystackReference: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
 
     ticketStatus: {

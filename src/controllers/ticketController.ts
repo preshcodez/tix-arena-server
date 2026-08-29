@@ -147,7 +147,7 @@ export const checkInTicket = async (
 };
 
 // ==============================
-// PAY FOR TICKET
+// INITIALIZE PAYSTACK PAYMENT
 // ==============================
 
 export const payForTicket = async (
@@ -163,18 +163,71 @@ export const payForTicket = async (
       return;
     }
 
-    const ticket = await ticketService.payForTicket(
+    const result = await ticketService.initializePayment(
       req.auth.sub,
       req.params.ticketId as string,
     );
 
     res.status(200).json({
       success: true,
-      message: "Payment successful",
+      message: "Paystack payment initialized successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Initialize Payment Error:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Internal Server Error";
+
+    res.status(400).json({
+      success: false,
+      message,
+    });
+  }
+};
+
+// ==============================
+// VERIFY PAYSTACK PAYMENT
+// ==============================
+
+export const verifyPayment = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.auth) {
+      res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+      return;
+    }
+
+    const { reference } = req.body;
+
+    const { ticketId } = req.params;
+
+    if (!reference) {
+      res.status(400).json({
+        success: false,
+        message: "Payment reference is required",
+      });
+      return;
+    }
+
+    const ticket = await ticketService.verifyPayment(
+      req.auth.sub,
+      ticketId as string,
+      reference,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Payment verified successfully",
       ticket,
     });
   } catch (error) {
-    console.error("Pay For Ticket Error:", error);
+    console.error("Verify Payment Error:", error);
 
     const message =
       error instanceof Error ? error.message : "Internal Server Error";
