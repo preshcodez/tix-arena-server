@@ -6,13 +6,14 @@ export interface ITicket extends Document {
 
   fullName: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber?: string;
 
   ticketType: string;
   quantity: number;
   totalAmount: number;
 
   paymentStatus: "pending" | "paid" | "failed";
+
   paystackReference?: string;
 
   ticketStatus: "active" | "used" | "cancelled";
@@ -24,6 +25,7 @@ export interface ITicket extends Document {
   checkedInAt?: Date;
 
   purchasedAt: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,7 +59,6 @@ const ticketSchema = new Schema<ITicket>(
 
     phoneNumber: {
       type: String,
-      required: true,
       trim: true,
     },
 
