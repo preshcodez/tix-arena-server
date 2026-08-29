@@ -219,7 +219,6 @@ export const initializePayment = async (userId: string, ticketId: string) => {
 
   // Paystack expects amount in kobo
   // ₦5,000 = 500,000 kobo
-
   const amountInKobo = Math.round(ticket.totalAmount * 100);
 
   // Unique Paystack reference
@@ -233,7 +232,10 @@ export const initializePayment = async (userId: string, ticketId: string) => {
       currency: "NGN",
       reference,
 
-      callback_url: `${CLIENT_URL}/payment/callback`,
+      // IMPORTANT:
+      // Send the ticket ID back to the frontend
+      // when Paystack redirects after payment.
+      callback_url: `${CLIENT_URL}/payment/callback?ticketId=${ticket._id}`,
 
       metadata: {
         ticketId: ticket._id.toString(),
@@ -312,7 +314,9 @@ export const verifyPayment = async (
 
   // Ask Paystack to verify transaction
   const response = await axios.get(
-    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(
+      reference,
+    )}`,
     {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
@@ -378,13 +382,9 @@ export const verifyPayment = async (
         eventLocation: event?.location || "N/A",
 
         ticketType: ticket.ticketType,
-
         quantity: ticket.quantity,
-
         totalAmount: ticket.totalAmount,
-
         ticketCode: ticket.ticketCode,
-
         qrCode: ticket.qrCode,
       });
 
