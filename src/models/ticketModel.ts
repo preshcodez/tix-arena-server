@@ -84,12 +84,14 @@ const ticketSchema = new Schema<ITicket>(
       type: String,
       enum: ["pending", "paid", "failed"],
       default: "pending",
+      index: true,
     },
 
     paystackReference: {
       type: String,
       unique: true,
       sparse: true,
+      index: true,
     },
 
     ticketStatus: {
@@ -102,6 +104,7 @@ const ticketSchema = new Schema<ITicket>(
       type: String,
       required: true,
       unique: true,
+      index: true,
     },
 
     qrCode: {

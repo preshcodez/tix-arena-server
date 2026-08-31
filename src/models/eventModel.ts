@@ -13,27 +13,31 @@ const TicketSchema = new Schema(
       required: true,
       min: 0,
     },
-    // Original quantity created by the vendor
+
+    // Original number of tickets created by vendor
     totalQuantity: {
       type: Number,
       required: true,
       min: 0,
     },
 
-    // Remaining quantity available
+    // Tickets currently available
     quantity: {
       type: Number,
       required: true,
       min: 0,
     },
-    // Number of tickets already sold
+
+    // Tickets successfully sold
     ticketSold: {
       type: Number,
       default: 0,
       min: 0,
     },
   },
-  { _id: false },
+  {
+    _id: false,
+  },
 );
 
 const SpeakerSchema = new Schema(
@@ -43,32 +47,44 @@ const SpeakerSchema = new Schema(
       required: true,
       trim: true,
     },
+
     photo: {
       type: String,
       default: null,
     },
+
     isHeadliner: {
       type: Boolean,
       default: false,
     },
   },
-  { _id: false },
+  {
+    _id: false,
+  },
 );
 
 export interface IEvent extends Document {
   _id: mongoose.Types.ObjectId;
+
   vendor: mongoose.Types.ObjectId;
+
   title: string;
   image?: string | null;
   description?: string;
+
   location: string;
   date: Date;
   time: string;
+
   category: string;
   subCategory: string;
+
   format: "Physical";
+
   price: number;
+
   tags: string[];
+
   tickets: {
     name: string;
     price: number;
@@ -84,9 +100,13 @@ export interface IEvent extends Document {
   }[];
 
   attendees: mongoose.Types.ObjectId[];
+
   isActive: boolean;
+
   status: "pending" | "approved" | "rejected";
+
   rejectionReason?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -99,6 +119,7 @@ const eventSchema = new Schema<IEvent>(
       required: true,
       index: true,
     },
+
     title: {
       type: String,
       required: true,
@@ -128,6 +149,7 @@ const eventSchema = new Schema<IEvent>(
       type: Date,
       required: true,
     },
+
     time: {
       type: String,
       required: true,
@@ -141,6 +163,7 @@ const eventSchema = new Schema<IEvent>(
       trim: true,
       maxlength: 120,
     },
+
     subCategory: {
       type: String,
       required: true,
@@ -186,6 +209,7 @@ const eventSchema = new Schema<IEvent>(
       type: Boolean,
       default: true,
     },
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -197,8 +221,14 @@ const eventSchema = new Schema<IEvent>(
       default: "",
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
-const Event: Model<IEvent> = mongoose.model<IEvent>("Event", eventSchema);
+const Event: Model<IEvent> = mongoose.model<IEvent>(
+  "Event",
+  eventSchema,
+);
+
 export default Event;

@@ -12,27 +12,27 @@ import {
 
 const router = Router();
 
-// ==============================
-// USER ROUTES
-// ==============================
+// =====================================================
+// USER TICKET ROUTES
+// =====================================================
 
 // Book ticket
 router.post("/book", authMiddleware, bookTicket);
 
-// Get my tickets
+// Get logged-in user's tickets
 router.get("/my-tickets", authMiddleware, getMyTickets);
 
 // Check in ticket
 router.post("/check-in", authMiddleware, checkInTicket);
 
-// ==============================
-// PAYSTACK
-// ==============================
+// =====================================================
+// PAYSTACK PAYMENT
+// =====================================================
 
-// Initialize Paystack payment
+// Initialize payment
 router.post("/:ticketId/pay", authMiddleware, initializePayment);
 
-// Verify Paystack payment
+// Verify payment
 router.post("/:ticketId/verify", authMiddleware, verifyPayment);
 
 export default router;
