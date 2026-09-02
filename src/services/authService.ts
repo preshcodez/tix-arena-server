@@ -85,7 +85,7 @@ export const registerUser = async (input: RegisterInput) => {
       businessName: input.businessName!.trim(),
       businessLogo: input.businessLogo || "",
       description: input.description || "",
-      status: "approved",
+      status: "pending",
     });
   }
 
