@@ -154,7 +154,7 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 10,
+      maxlength: 20,
     },
 
     category: {
