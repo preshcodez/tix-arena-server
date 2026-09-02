@@ -7,6 +7,8 @@ export const createEvent = async (
   res: Response,
 ): Promise<void> => {
   try {
+    console.log("REQ FILE:", req.file);
+    console.log("REQ BODY:", req.body);
     if (!req.vendor) {
       res.status(403).json({
         success: false,
