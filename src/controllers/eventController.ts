@@ -15,17 +15,56 @@ export const createEvent = async (
       return;
     }
 
-    let imageUrl = req.body.image;
+    let imageUrl = req.body.image || null;
 
-    // Upload image to Cloudinary if one was provided
+    // Upload event cover image to Cloudinary
     if (req.file) {
       const result = await uploadImage(req.file.buffer, "tix-arena/events");
 
       imageUrl = result.secure_url;
     }
 
+    // Parse JSON fields coming from FormData
+    let tickets = [];
+    let speakers = [];
+    let tags = [];
+
+    try {
+      tickets =
+        typeof req.body.tickets === "string"
+          ? JSON.parse(req.body.tickets)
+          : req.body.tickets || [];
+
+      speakers =
+        typeof req.body.speakers === "string"
+          ? JSON.parse(req.body.speakers)
+          : req.body.speakers || [];
+
+      tags =
+        typeof req.body.tags === "string"
+          ? JSON.parse(req.body.tags)
+          : req.body.tags || [];
+    } catch {
+      res.status(400).json({
+        success: false,
+        message: "Invalid ticket, speaker or tag data.",
+      });
+      return;
+    }
+
     const eventData = {
-      ...req.body,
+      title: req.body.title,
+      description: req.body.description,
+      location: req.body.location,
+      date: req.body.date,
+      time: req.body.time,
+      category: req.body.category,
+      subCategory: req.body.subCategory,
+      format: req.body.format,
+      price: Number(req.body.price) || 0,
+      tags,
+      tickets,
+      speakers,
       image: imageUrl,
     };
 
@@ -50,7 +89,6 @@ export const createEvent = async (
     });
   }
 };
-
 export const getAllEvents = async (
   _req: Request,
   res: Response,
