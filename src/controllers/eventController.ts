@@ -7,8 +7,6 @@ export const createEvent = async (
   res: Response,
 ): Promise<void> => {
   try {
-    console.log("REQ FILE:", req.file);
-    console.log("REQ BODY:", req.body);
     if (!req.vendor) {
       res.status(403).json({
         success: false,
@@ -17,7 +15,11 @@ export const createEvent = async (
       return;
     }
 
-    let imageUrl = req.body.image || null;
+    let imageUrl: string | null = null;
+
+    if (req.body?.image) {
+      imageUrl = req.body.image;
+    }
 
     // Upload event cover image to Cloudinary
     if (req.file) {
