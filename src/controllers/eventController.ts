@@ -7,6 +7,11 @@ export const createEvent = async (
   res: Response,
 ): Promise<void> => {
   try {
+     console.log("CONTENT TYPE:", req.headers["content-type"]);
+     console.log("FILE RECEIVED:", req.file);
+     console.log("BODY IMAGE:", req.body?.image);
+
+     console.log("REQ BODY:", req.body);
     if (!req.vendor) {
       res.status(403).json({
         success: false,
