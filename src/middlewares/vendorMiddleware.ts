@@ -17,7 +17,7 @@ export const vendorMiddleware = async (
 
     const vendor = await Vendor.findOne({
       user: req.auth.sub,
-      status: "approved",
+      //  status: "approved",
     });
 
     if (!vendor) {
