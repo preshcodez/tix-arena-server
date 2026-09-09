@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { catchAsync } from "../utils/catchAsync";
 import * as userService from "../services/userService";
+import { uploadImage } from "../utils/uploadImage";
 
 // ==============================
 // GET MY PROFILE
@@ -20,7 +21,21 @@ export const getMe = catchAsync(async (req: Request, res: Response) => {
 // ==============================
 
 export const updateMe = catchAsync(async (req: Request, res: Response) => {
-  const user = await userService.updateMe(req.auth!.sub, req.body);
+  let avatar: string | undefined;
+
+  if (req.file) {
+    const uploadedImage = await uploadImage(
+      req.file.buffer,
+      "tix-arena/profile-images",
+    );
+
+    avatar = uploadedImage.secure_url;
+  }
+
+  const user = await userService.updateMe(req.auth!.sub, {
+    ...req.body,
+    ...(avatar && { avatar }),
+  });
 
   res.status(200).json({
     success: true,
@@ -35,7 +50,10 @@ export const updateMe = catchAsync(async (req: Request, res: Response) => {
 
 export const completeOnboarding = catchAsync(
   async (req: Request, res: Response) => {
-    const user = await userService.completeOnboarding(req.auth!.sub, req.body);
+    const user = await userService.completeOnboarding(
+      req.auth!.sub,
+      req.body,
+    );
 
     res.status(200).json({
       success: true,

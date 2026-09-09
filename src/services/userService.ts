@@ -1,10 +1,6 @@
 import User from "../models/userModel";
 import { ApiError } from "../utils/ApiError";
 
-// ==============================
-// GET MY PROFILE
-// ==============================
-
 export const getMe = async (userId: string) => {
   const user = await User.findById(userId);
 
@@ -38,28 +34,21 @@ export const updateMe = async (userId: string, input: UpdateMeInput) => {
     throw new ApiError(404, "User not found.");
   }
 
-  // Update first name
   if (input.firstName !== undefined) {
     user.firstName = input.firstName.trim();
   }
 
-  // Update last name
   if (input.lastName !== undefined) {
     user.lastName = input.lastName.trim();
   }
 
-  // Update profile image
   if (input.avatar !== undefined) {
     user.avatar = input.avatar;
   }
 
-  // Update interests
   if (input.interests !== undefined) {
     user.interests = input.interests;
   }
-
-  // Gender is NOT updated here.
-  // Gender is only collected during onboarding.
 
   await user.save();
 
@@ -143,7 +132,6 @@ export const addInterests = async (userId: string, interests: string[]) => {
     throw new ApiError(400, "Please provide valid interests.");
   }
 
-  // Prevent duplicate interests
   const newInterests = cleanedInterests.filter(
     (interest) =>
       !user.interests.some(

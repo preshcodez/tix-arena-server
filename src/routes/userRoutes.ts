@@ -16,24 +16,23 @@ import {
   addInterestsSchema,
 } from "../validation/userValidation";
 
+import upload from "../middlewares/upload";
+
 const router = express.Router();
 
-// ==============================
 // GET MY PROFILE
-// ==============================
-
 router.get("/me", authMiddleware, getMe);
 
-// ==============================
 // UPDATE MY PROFILE
-// ==============================
+router.patch(
+  "/me",
+  authMiddleware,
+  upload.single("avatar"),
+  validate(updateMeSchema),
+  updateMe,
+);
 
-router.patch("/me", authMiddleware, validate(updateMeSchema), updateMe);
-
-// ==============================
 // COMPLETE ONBOARDING
-// ==============================
-
 router.post(
   "/onboarding",
   authMiddleware,
@@ -41,10 +40,7 @@ router.post(
   completeOnboarding,
 );
 
-// ==============================
 // ADD MORE INTERESTS
-// ==============================
-
 router.post(
   "/interests",
   authMiddleware,
