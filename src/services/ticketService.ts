@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { v4 as uuidv4 } from "uuid";
 import * as QRCode from "qrcode";
 import axios from "axios";
 
@@ -118,8 +117,7 @@ export const bookTicket = async (
   }
 
   const totalAmount = updatedTicket.price * quantity;
-  const ticketCode = uuidv4();
-
+ const ticketCode = `TIX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   try {
     // Generate QR code
     const qrCodeDataUrl = await QRCode.toDataURL(ticketCode);
