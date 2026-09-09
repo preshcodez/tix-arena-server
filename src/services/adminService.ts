@@ -126,6 +126,7 @@ export const approveEvent = async (eventId: string) => {
     eventId,
     {
       status: "approved",
+      isActive: true,
       rejectionReason: "",
     },
     {

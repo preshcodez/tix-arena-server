@@ -39,6 +39,28 @@ export const getAllEvents = async () => {
 };
 
 // ==============================
+// APPROVE EVENT
+// ==============================
+
+export const approveEvent = async (eventId: string) => {
+  const event = await Event.findByIdAndUpdate(
+    eventId,
+    {
+      status: "approved",
+      isActive: true,
+      rejectionReason: "",
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!event) {
+    throw new Error("Event not found");
+  }
+
+  return event;
+};
+
+// ==============================
 // GET SINGLE EVENT
 // ==============================
 
