@@ -11,7 +11,7 @@ import {
 } from "../controllers/eventController";
 
 import { authMiddleware } from "../middlewares/authMiddleware";
-import { vendorMiddleware } from "../middlewares/vendorMiddleware";
+import vendorMiddleware from "../middlewares/vendorMiddleware";
 import upload from "../middlewares/upload";
 
 const router = express.Router();
