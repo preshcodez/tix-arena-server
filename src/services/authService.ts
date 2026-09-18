@@ -73,20 +73,72 @@ export const registerUser = async (input: RegisterInput) => {
   // If the person selected "vendor" during
   // registration, create the Vendor document.
   //
-  // IMPORTANT:
   // The vendor starts as PENDING.
   // Admin must approve before events can
   // be created.
   // ==========================================
 
   if (input.role === "vendor") {
-    await Vendor.create({
+    const vendor = await Vendor.create({
       user: user._id,
       businessName: input.businessName!.trim(),
       businessLogo: input.businessLogo || "",
       description: input.description || "",
       status: "pending",
     });
+
+    // ==========================================
+    // NOTIFY ADMIN OF NEW VENDOR REGISTRATION
+    // ==========================================
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+
+    if (adminEmail) {
+      const applicantName =
+        `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
+
+      await sendEmail(
+        adminEmail,
+        "New Tix-Arena Vendor Registration",
+        `
+          <div>
+            <h2>New Vendor Registration</h2>
+
+            <p>Hello Admin,</p>
+
+            <p>
+              A new vendor has registered on Tix-Arena and is
+              waiting for approval.
+            </p>
+
+            <p>
+              <strong>Applicant:</strong>
+              ${applicantName || "N/A"}
+            </p>
+
+            <p>
+              <strong>Email:</strong>
+              ${user.email}
+            </p>
+
+            <p>
+              <strong>Business Name:</strong>
+              ${vendor.businessName}
+            </p>
+
+            <p>
+              <strong>Status:</strong>
+              Pending
+            </p>
+
+            <p>
+              Please log in to the admin dashboard to review
+              this vendor application.
+            </p>
+          </div>
+        `,
+      );
+    }
   }
 
   // ==========================================

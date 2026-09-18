@@ -1,57 +1,102 @@
 import Event from "../models/eventModel";
 import Vendor from "../models/vendorModel";
 
-// ==============================
-// CREATE EVENT
-// ==============================
+import { sendEmail } from "../utils/sendEmail";
 
 export const createEvent = async (vendorId: string, eventData: any) => {
-  const vendorExists = await Vendor.findById(vendorId);
+  const vendor = await Vendor.findById(vendorId);
 
-  if (!vendorExists) {
+  if (!vendor) {
     throw new Error("Vendor not found");
   }
 
-  if (vendorExists.status !== "approved") {
+  if (vendor.status !== "approved") {
     throw new Error("Vendor is not approved to create events");
   }
 
-  const newEvent = await Event.create({
+  const event = await Event.create({
     vendor: vendorId,
     ...eventData,
-    isActive:true,
+    status: "pending",
+    isActive: false,
   });
 
-  return newEvent;
-};
+  // ==========================================
+  // NOTIFY ADMIN OF NEW EVENT
+  // ==========================================
 
-// ==============================
-// GET ALL EVENTS
-// ==============================
+  const adminEmail = process.env.ADMIN_EMAIL;
+
+  if (adminEmail) {
+    await sendEmail(
+      adminEmail,
+      "New Tix-Arena Event Awaiting Approval",
+      `
+        <div>
+          <h2>New Event Awaiting Approval</h2>
+
+          <p>Hello Admin,</p>
+
+          <p>
+            A new event has been created by an approved vendor
+            and is waiting for your approval.
+          </p>
+
+          <p>
+            <strong>Event:</strong>
+            ${event.title}
+          </p>
+
+          <p>
+            <strong>Vendor:</strong>
+            ${vendor.businessName}
+          </p>
+
+          <p>
+            <strong>Location:</strong>
+            ${event.location}
+          </p>
+
+          <p>
+            <strong>Date:</strong>
+            ${event.date}
+          </p>
+
+          <p>
+            <strong>Time:</strong>
+            ${event.time}
+          </p>
+
+          <p>
+            <strong>Status:</strong>
+            Pending
+          </p>
+
+          <p>
+            Please log in to the admin dashboard to review
+            and approve or reject this event.
+          </p>
+        </div>
+      `,
+    );
+  }
+
+  return event;
+};
 
 export const getAllEvents = async () => {
   return Event.find({
     status: "approved",
     isActive: true,
   })
-    .populate("vendor", "businessName email")
+    .populate("vendor", "businessName businessLogo email")
     .sort({ createdAt: -1 });
 };
 
-// ==============================
-// APPROVE EVENT
-// ==============================
-
-export const approveEvent = async (eventId: string) => {
-  const event = await Event.findByIdAndUpdate(
-    eventId,
-    {
-      status: "approved",
-      isActive: true,
-      rejectionReason: "",
-    },
-    { new: true, runValidators: true },
-  );
+export const getSingleEvent = async (eventId: string) => {
+  const event = await Event.findById(eventId)
+    .populate("vendor", "businessName businessLogo email")
+    .populate("attendees", "firstName lastName email avatar");
 
   if (!event) {
     throw new Error("Event not found");
@@ -60,23 +105,9 @@ export const approveEvent = async (eventId: string) => {
   return event;
 };
 
-// ==============================
-// GET SINGLE EVENT
-// ==============================
-
-export const getSingleEvent = async (eventId: string) => {
-  return Event.findById(eventId)
-    .populate("vendor", "businessName email")
-    .populate("attendees", "firstName lastName email");
-};
-
-// ==============================
-// UPDATE OWN EVENT
-// ==============================
-
 export const updateEvent = async (
-  vendorId: string,
   eventId: string,
+  vendorId: string,
   eventData: any,
 ) => {
   const event = await Event.findOne({
@@ -85,12 +116,9 @@ export const updateEvent = async (
   });
 
   if (!event) {
-    throw new Error(
-      "Event not found or you are not authorized to update this event",
-    );
+    throw new Error("Event not found or you are not the owner");
   }
 
-  // Prevent changing ownership
   delete eventData.vendor;
 
   Object.assign(event, eventData);
@@ -100,51 +128,33 @@ export const updateEvent = async (
   return event;
 };
 
-// ==============================
-// DELETE OWN EVENT
-// ==============================
-
-export const deleteEvent = async (vendorId: string, eventId: string) => {
-  const event = await Event.findOne({
+export const deleteEvent = async (eventId: string, vendorId: string) => {
+  const event = await Event.findOneAndDelete({
     _id: eventId,
     vendor: vendorId,
   });
 
   if (!event) {
-    throw new Error(
-      "Event not found or you are not authorized to delete this event",
-    );
+    throw new Error("Event not found or you are not the owner");
   }
-
-  await Event.findByIdAndDelete(eventId);
 
   return event;
 };
 
-// ==============================
-// GET VENDOR EVENTS
-// ==============================
-
 export const getVendorEvents = async (vendorId: string) => {
-  return Event.find({ vendor: vendorId }).sort({ createdAt: -1 });
+  return Event.find({
+    vendor: vendorId,
+  }).sort({ createdAt: -1 });
 };
 
-
-
-export const closeEvent = async (vendorId: string, eventId: string) => {
+export const closeEvent = async (eventId: string, vendorId: string) => {
   const event = await Event.findOne({
     _id: eventId,
     vendor: vendorId,
   });
 
   if (!event) {
-    throw new Error(
-      "Event not found or you are not authorized to close this event",
-    );
-  }
-
-  if (!event.isActive) {
-    throw new Error("Event is already closed");
+    throw new Error("Event not found or you are not the owner");
   }
 
   event.isActive = false;

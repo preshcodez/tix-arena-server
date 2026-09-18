@@ -102,6 +102,16 @@ export const rejectVendor = async (
 
   const user = vendor.user as any;
 
+  // ==========================================
+  // CHANGE USER ROLE BACK TO USER AFTER REJECTION
+  // ==========================================
+
+  if (user?._id) {
+    await User.findByIdAndUpdate(user._id, {
+      role: "user",
+    });
+  }
+
   // ==============================
   // SEND REJECTION EMAIL
   // ==============================
@@ -172,6 +182,7 @@ export const rejectEvent = async (eventId: string, rejectionReason: string) => {
     eventId,
     {
       status: "rejected",
+      isActive: false,
       rejectionReason,
     },
     {
