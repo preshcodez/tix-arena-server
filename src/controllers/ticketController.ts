@@ -73,6 +73,40 @@ export const getMyTickets = async (req: Request, res: Response) => {
 };
 
 // =====================================================
+// REMOVE TICKET FROM MY TICKETS
+// =====================================================
+
+export const hideMyTicket = async (req: Request, res: Response) => {
+  try {
+    const userId = req.auth?.sub;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const ticketId = req.params.ticketId as string;
+
+    const ticket = await ticketService.hideMyTicket(userId, ticketId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Ticket removed from My Tickets",
+      data: ticket,
+    });
+  } catch (error: any) {
+    console.error("Hide ticket error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Unable to remove ticket from My Tickets",
+    });
+  }
+};
+
+// =====================================================
 // CHECK IN TICKET
 // =====================================================
 

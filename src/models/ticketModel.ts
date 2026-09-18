@@ -26,6 +26,9 @@ export interface ITicket extends Document {
 
   purchasedAt: Date;
 
+  // Hide ticket from user's My Tickets page
+  hiddenFromUser: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -125,6 +128,11 @@ const ticketSchema = new Schema<ITicket>(
     purchasedAt: {
       type: Date,
       default: Date.now,
+    },
+
+    hiddenFromUser: {
+      type: Boolean,
+      default: false,
     },
   },
   {

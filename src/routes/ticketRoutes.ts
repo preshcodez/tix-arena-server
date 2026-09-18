@@ -5,6 +5,7 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 import {
   bookTicket,
   getMyTickets,
+  hideMyTicket,
   checkInTicket,
   initializePayment,
   verifyPayment,
@@ -21,6 +22,9 @@ router.post("/book", authMiddleware, bookTicket);
 
 // Get logged-in user's tickets
 router.get("/my-tickets", authMiddleware, getMyTickets);
+
+// Remove ticket from My Tickets
+router.patch("/:ticketId/hide", authMiddleware, hideMyTicket);
 
 // Check in ticket
 router.post("/check-in", authMiddleware, checkInTicket);

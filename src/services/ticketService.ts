@@ -5,11 +5,17 @@ import axios from "axios";
 import Ticket from "../models/ticketModel";
 import Event from "../models/eventModel";
 import User from "../models/userModel";
+
 import { emailPurchaseTicket } from "../utils/emailPurchaseTicket";
 import { uploadImage } from "../services/cloudinaryService";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
+// =====================================================
+// BOOK TICKET
+// =====================================================
 
 export const bookTicket = async (
   userId: string,
@@ -117,7 +123,12 @@ export const bookTicket = async (
   }
 
   const totalAmount = updatedTicket.price * quantity;
- const ticketCode = `TIX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+  const ticketCode = `TIX-${Math.random()
+    .toString(36)
+    .substring(2, 8)
+    .toUpperCase()}`;
+
   try {
     // Generate QR code
     const qrCodeDataUrl = await QRCode.toDataURL(ticketCode);
@@ -187,15 +198,53 @@ export const bookTicket = async (
   }
 };
 
+// =====================================================
+// GET MY TICKETS
+// =====================================================
+
 export const getMyTickets = async (userId: string) => {
   return Ticket.find({
     user: new mongoose.Types.ObjectId(userId),
+
+    // Do not show tickets the user removed from My Tickets
+    hiddenFromUser: false,
   })
     .populate("event")
     .sort({
       createdAt: -1,
     });
 };
+
+// =====================================================
+// REMOVE TICKET FROM MY TICKETS
+// =====================================================
+
+export const hideMyTicket = async (userId: string, ticketId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(ticketId)) {
+    throw new Error("Invalid ticket ID");
+  }
+
+  const ticket = await Ticket.findOne({
+    _id: ticketId,
+    user: new mongoose.Types.ObjectId(userId),
+  });
+
+  if (!ticket) {
+    throw new Error("Ticket not found");
+  }
+
+  // Soft remove only.
+  // The actual ticket record remains in the database.
+  ticket.hiddenFromUser = true;
+
+  await ticket.save();
+
+  return ticket;
+};
+
+// =====================================================
+// CHECK IN TICKET
+// =====================================================
 
 export const checkInTicket = async (ticketCode: string) => {
   const ticket = await Ticket.findOne({
@@ -228,6 +277,10 @@ export const checkInTicket = async (ticketCode: string) => {
 
   return ticket;
 };
+
+// =====================================================
+// INITIALIZE PAYMENT
+// =====================================================
 
 export const initializePayment = async (userId: string, ticketId: string) => {
   if (!PAYSTACK_SECRET_KEY) {
@@ -270,6 +323,7 @@ export const initializePayment = async (userId: string, ticketId: string) => {
    * an old Paystack reference, but the frontend needs a fresh accessCode
    * to open the Paystack popup with resumeTransaction().
    */
+
   const amountInKobo = Math.round(ticket.totalAmount * 100);
 
   const reference = `TIX-${ticket._id}-${Date.now()}`;
@@ -281,8 +335,10 @@ export const initializePayment = async (userId: string, ticketId: string) => {
       amount: amountInKobo,
       currency: "NGN",
       reference,
+
       callback_url:
         `${CLIENT_URL}/payment/callback` + `?ticketId=${ticket._id}`,
+
       metadata: {
         ticketId: ticket._id.toString(),
         userId,
@@ -318,6 +374,10 @@ export const initializePayment = async (userId: string, ticketId: string) => {
     amount: ticket.totalAmount,
   };
 };
+
+// =====================================================
+// VERIFY PAYMENT
+// =====================================================
 
 export const verifyPayment = async (
   userId: string,
@@ -408,11 +468,15 @@ export const verifyPayment = async (
       await emailPurchaseTicket({
         email: user.email,
         fullName,
+
         eventTitle: event?.title || "Your Event",
+
         eventDate: event?.date
           ? new Date(event.date).toLocaleDateString()
           : "N/A",
+
         eventLocation: event?.location || "N/A",
+
         ticketType: ticket.ticketType,
         quantity: ticket.quantity,
         totalAmount: ticket.totalAmount,
