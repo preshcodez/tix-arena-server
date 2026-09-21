@@ -10,7 +10,6 @@ import { emailPurchaseTicket } from "../utils/emailPurchaseTicket";
 import { uploadImage } from "../services/cloudinaryService";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
 // =====================================================
@@ -60,7 +59,7 @@ export const bookTicket = async (
   }
 
   // Prevent duplicate pending tickets for the exact same purchase.
-  // A paid ticket is NOT reused, so the user can purchase again later.
+  // Paid tickets can still be purchased again later.
   const existingPendingTicket = await Ticket.findOne({
     user: new mongoose.Types.ObjectId(userId),
     event: new mongoose.Types.ObjectId(eventId),
@@ -130,7 +129,10 @@ export const bookTicket = async (
     .toUpperCase()}`;
 
   try {
-    // Generate QR code
+    // =================================================
+    // GENERATE QR CODE
+    // =================================================
+
     const qrCodeDataUrl = await QRCode.toDataURL(ticketCode);
 
     const base64Data = qrCodeDataUrl.replace(/^data:image\/png;base64,/, "");
@@ -142,30 +144,45 @@ export const bookTicket = async (
 
     const qrCode = qrUpload.secure_url;
 
-    // Create ticket
+    // =================================================
+    // CREATE TICKET
+    // =================================================
+
     const ticket = await Ticket.create({
       user: new mongoose.Types.ObjectId(userId),
       event: new mongoose.Types.ObjectId(eventId),
+
       fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+
       email: user.email,
+
       phoneNumber: phoneNumber?.trim() || undefined,
+
       ticketType,
       quantity,
       totalAmount,
+
       paymentStatus: "pending",
+
       ticketStatus: "active",
+
       ticketCode,
       qrCode,
     });
 
-    // Add user to event attendees
+    // =================================================
+    // ADD USER TO EVENT ATTENDEES
+    // =================================================
+
     const alreadyAttending = updatedEvent.attendees.some(
       (attendee) => attendee.toString() === userId,
     );
 
     if (!alreadyAttending) {
       await Event.updateOne(
-        { _id: eventId },
+        {
+          _id: eventId,
+        },
         {
           $addToSet: {
             attendees: new mongoose.Types.ObjectId(userId),
@@ -176,9 +193,14 @@ export const bookTicket = async (
 
     return ticket;
   } catch (error) {
-    // Restore ticket inventory if ticket creation fails.
+    // =================================================
+    // RESTORE INVENTORY IF TICKET CREATION FAILS
+    // =================================================
+
     await Event.updateOne(
-      { _id: eventId },
+      {
+        _id: eventId,
+      },
       {
         $inc: {
           "tickets.$[ticket].quantity": quantity,
@@ -203,6 +225,10 @@ export const bookTicket = async (
 // =====================================================
 
 export const getMyTickets = async (userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user ID");
+  }
+
   return Ticket.find({
     user: new mongoose.Types.ObjectId(userId),
 
@@ -222,6 +248,10 @@ export const getMyTickets = async (userId: string) => {
 export const hideMyTicket = async (userId: string, ticketId: string) => {
   if (!mongoose.Types.ObjectId.isValid(ticketId)) {
     throw new Error("Invalid ticket ID");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user ID");
   }
 
   const ticket = await Ticket.findOne({
@@ -279,6 +309,147 @@ export const checkInTicket = async (ticketCode: string) => {
 };
 
 // =====================================================
+// GET TICKETS FOR VENDOR EVENT
+// =====================================================
+
+export const getEventTickets = async (eventId: string, vendorId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    throw new Error("Invalid event ID");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(vendorId)) {
+    throw new Error("Invalid vendor ID");
+  }
+
+  // Make sure this event belongs to the logged-in vendor.
+  const event = await Event.findOne({
+    _id: eventId,
+    vendor: vendorId,
+  });
+
+  if (!event) {
+    throw new Error("Event not found or you are not the owner");
+  }
+
+  const tickets = await Ticket.find({
+    event: new mongoose.Types.ObjectId(eventId),
+  })
+    .populate("user", "firstName lastName email avatar")
+    .sort({
+      createdAt: -1,
+    })
+    .lean();
+
+  return tickets;
+};
+
+// =====================================================
+// GET EVENT TICKET STATISTICS
+// =====================================================
+
+export const getEventTicketStatistics = async (
+  eventId: string,
+  vendorId: string,
+) => {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    throw new Error("Invalid event ID");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(vendorId)) {
+    throw new Error("Invalid vendor ID");
+  }
+
+  // Make sure this event belongs to the logged-in vendor.
+  const event = await Event.findOne({
+    _id: eventId,
+    vendor: vendorId,
+  }).lean();
+
+  if (!event) {
+    throw new Error("Event not found or you are not the owner");
+  }
+
+  // =================================================
+  // TOTAL TICKETS CREATED
+  // =================================================
+
+  const totalTicketsCreated = (event.tickets || []).reduce(
+    (total, ticket) => total + Number(ticket.totalQuantity || 0),
+    0,
+  );
+
+  // =================================================
+  // TOTAL TICKETS SOLD
+  // =================================================
+
+  const ticketsSold = (event.tickets || []).reduce(
+    (total, ticket) => total + Number(ticket.ticketSold || 0),
+    0,
+  );
+
+  // =================================================
+  // TOTAL TICKETS REMAINING
+  // =================================================
+
+  const ticketsRemaining = (event.tickets || []).reduce(
+    (total, ticket) => total + Number(ticket.quantity || 0),
+    0,
+  );
+
+  // =================================================
+  // TOTAL CHECK-INS
+  // =================================================
+
+  const totalCheckIns = await Ticket.countDocuments({
+    event: new mongoose.Types.ObjectId(eventId),
+    checkedIn: true,
+  });
+
+  // =================================================
+  // TICKET TYPE HELPER
+  // =================================================
+
+  const getTicketTypeStatistics = (ticketName: string) => {
+    const ticket = (event.tickets || []).find(
+      (item) => item.name.toLowerCase() === ticketName.toLowerCase(),
+    );
+
+    if (!ticket) {
+      return {
+        sold: 0,
+        total: 0,
+      };
+    }
+
+    return {
+      sold: Number(ticket.ticketSold || 0),
+      total: Number(ticket.totalQuantity || 0),
+    };
+  };
+
+  // =================================================
+  // REGULAR / VIP / VVIP
+  // =================================================
+
+  const regularTickets = getTicketTypeStatistics("Regular");
+
+  const vipTickets = getTicketTypeStatistics("VIP");
+
+  const vvipTickets = getTicketTypeStatistics("VVIP");
+
+  return {
+    totalTicketsCreated,
+    ticketsSold,
+    ticketsRemaining,
+    totalCheckIns,
+
+    regularTickets,
+    vipTickets,
+    vvipTickets,
+  };
+};
+
+// =====================================================
 // INITIALIZE PAYMENT
 // =====================================================
 
@@ -289,6 +460,10 @@ export const initializePayment = async (userId: string, ticketId: string) => {
 
   if (!mongoose.Types.ObjectId.isValid(ticketId)) {
     throw new Error("Invalid ticket ID");
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user ID");
   }
 
   const ticket = await Ticket.findOne({
@@ -316,13 +491,9 @@ export const initializePayment = async (userId: string, ticketId: string) => {
     throw new Error("This ticket does not require payment");
   }
 
-  /*
-   * Always initialize a fresh Paystack transaction for a pending ticket.
-   *
-   * This is important because an existing pending ticket may already have
-   * an old Paystack reference, but the frontend needs a fresh accessCode
-   * to open the Paystack popup with resumeTransaction().
-   */
+  // =================================================
+  // PAYSTACK
+  // =================================================
 
   const amountInKobo = Math.round(ticket.totalAmount * 100);
 
@@ -396,6 +567,10 @@ export const verifyPayment = async (
     throw new Error("Invalid ticket ID");
   }
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid user ID");
+  }
+
   const ticket = await Ticket.findOne({
     _id: ticketId,
     user: new mongoose.Types.ObjectId(userId),
@@ -415,6 +590,10 @@ export const verifyPayment = async (
     throw new Error("Payment reference does not match this ticket");
   }
 
+  // =================================================
+  // VERIFY WITH PAYSTACK
+  // =================================================
+
   const response = await axios.get(
     `https://api.paystack.co/transaction/verify/${encodeURIComponent(
       reference,
@@ -432,15 +611,27 @@ export const verifyPayment = async (
     throw new Error("Unable to verify Paystack payment");
   }
 
+  // =================================================
+  // VERIFY AMOUNT
+  // =================================================
+
   const expectedAmount = Math.round(ticket.totalAmount * 100);
 
   if (Number(payment.amount) !== expectedAmount) {
     throw new Error("Payment amount does not match ticket amount");
   }
 
+  // =================================================
+  // VERIFY CURRENCY
+  // =================================================
+
   if (payment.currency && payment.currency !== "NGN") {
     throw new Error("Payment currency is invalid");
   }
+
+  // =================================================
+  // PAYMENT FAILED
+  // =================================================
 
   if (payment.status !== "success") {
     ticket.paymentStatus = "failed";
@@ -450,19 +641,25 @@ export const verifyPayment = async (
     throw new Error(`Payment was not successful. Status: ${payment.status}`);
   }
 
-  // Payment successful
+  // =================================================
+  // PAYMENT SUCCESSFUL
+  // =================================================
+
   ticket.paymentStatus = "paid";
   ticket.paystackReference = reference;
   ticket.purchasedAt = new Date();
 
   await ticket.save();
 
+  // =================================================
+  // SEND TICKET EMAIL
+  // =================================================
+
   const user = ticket.user as any;
   const event = ticket.event as any;
 
   const fullName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
 
-  // Send ticket confirmation email with QR code
   if (user?.email) {
     try {
       await emailPurchaseTicket({
@@ -478,9 +675,13 @@ export const verifyPayment = async (
         eventLocation: event?.location || "N/A",
 
         ticketType: ticket.ticketType,
+
         quantity: ticket.quantity,
+
         totalAmount: ticket.totalAmount,
+
         ticketCode: ticket.ticketCode,
+
         qrCode: ticket.qrCode,
       });
 

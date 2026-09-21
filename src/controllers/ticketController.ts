@@ -210,3 +210,70 @@ export const verifyPayment = async (req: Request, res: Response) => {
     });
   }
 };
+
+// =====================================================
+// GET TICKETS FOR VENDOR EVENT
+// =====================================================
+
+export const getEventTickets = async (req: Request, res: Response) => {
+  try {
+    if (!req.vendor) {
+      return res.status(403).json({
+        success: false,
+        message: "Approved vendor account required",
+      });
+    }
+
+    const eventId = req.params.eventId as string;
+    const vendorId = req.vendor._id.toString();
+
+    const tickets = await ticketService.getEventTickets(eventId, vendorId);
+
+    return res.status(200).json({
+      success: true,
+      data: tickets,
+    });
+  } catch (error: any) {
+    console.error("Get event tickets error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Unable to get event tickets",
+    });
+  }
+};
+
+// =====================================================
+// GET EVENT TICKET STATISTICS
+// =====================================================
+
+export const getEventTicketStatistics = async (req: Request, res: Response) => {
+  try {
+    if (!req.vendor) {
+      return res.status(403).json({
+        success: false,
+        message: "Approved vendor account required",
+      });
+    }
+
+    const eventId = req.params.eventId as string;
+    const vendorId = req.vendor._id.toString();
+
+    const statistics = await ticketService.getEventTicketStatistics(
+      eventId,
+      vendorId,
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: statistics,
+    });
+  } catch (error: any) {
+    console.error("Get event ticket statistics error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Unable to get event ticket statistics",
+    });
+  }
+};
