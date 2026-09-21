@@ -248,9 +248,17 @@ export const getVendorEvents = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const events = await eventService.getVendorEvents(
-      req.params.vendorId as string,
-    );
+    if (!req.vendor) {
+      res.status(403).json({
+        success: false,
+        message: "Approved vendor account required",
+      });
+      return;
+    }
+
+    const vendorId = req.vendor._id.toString();
+
+    const events = await eventService.getVendorEvents(vendorId);
 
     res.status(200).json({
       success: true,
@@ -266,7 +274,6 @@ export const getVendorEvents = async (
     });
   }
 };
-
 export const closeEvent = async (
   req: Request,
   res: Response,

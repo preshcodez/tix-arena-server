@@ -17,6 +17,7 @@ import upload from "../middlewares/upload";
 const router = express.Router();
 
 // ================= PUBLIC EVENT ROUTES =================
+
 // Create event
 router.post(
   "/",
@@ -26,11 +27,15 @@ router.post(
   createEvent,
 );
 
-
-// Get all events
+// Get all approved public events
 router.get("/", getAllEvents);
 
-// Get vendor events
+// ================= VENDOR EVENT ROUTES =================
+
+// Get logged-in vendor's events
+router.get("/vendor/me", authMiddleware, vendorMiddleware, getVendorEvents);
+
+// Get vendor events by vendor ID
 router.get(
   "/vendor/:vendorId",
   authMiddleware,
@@ -40,12 +45,6 @@ router.get(
 
 // Get single event
 router.get("/:id", getSingleEvent);
-
-// ================= VENDOR ROUTES =================
-
-
-
-
 
 // Update event
 router.patch(
